@@ -329,34 +329,10 @@ namespace CascStorageLib
                     else
                     {
                         // sparse data with inlined strings
-                        var offsetMapOffset = sections[sectionIndex].OffsetRecordsEnd + sections[sectionIndex].IndexDataSize + (sections[sectionIndex].CopyTableCount * 8);
+                        recordsData = reader.ReadBytes(sections[sectionIndex].OffsetRecordsEndOffset - sections[sectionIndex].FileOffset);
 
-                        recordsData = reader.ReadBytes(sections[sectionIndex].OffsetRecordsEnd - sections[sectionIndex].FileOffset);
-
-                        if (reader.BaseStream.Position != offsetMapOffset)
-                            throw new Exception("reader.BaseStream.Position != offsetMapOffset");
-
-                        Dictionary<uint, int> offSetKeyMap = new Dictionary<uint, int>();
-                        List<SparseEntry> tempSparseEntries = new List<SparseEntry>();
-                        for (int i = 0; i < sections[sectionIndex].OffsetMapIDCount; i++)
-                        {
-                            SparseEntry sparse = reader.Read<SparseEntry>();
-
-                            if (sparse.Offset == 0 || sparse.Size == 0)
-                                continue;
-
-                            // special case, may contain duplicates in the offset map that we don't want
-                            if (sections[sectionIndex].CopyTableCount == 0)
-                            {
-                                if (offSetKeyMap.ContainsKey(sparse.Offset))
-                                    continue;
-                            }
-
-                            tempSparseEntries.Add(sparse);
-                            offSetKeyMap.Add(sparse.Offset, 0);
-                        }
-
-                        sparseEntries = tempSparseEntries.ToArray();
+                        if (reader.BaseStream.Position != sections[sectionIndex].OffsetRecordsEndOffset)
+                            throw new Exception("reader.BaseStream.Position != sections[sectionIndex].OffsetRecordsEndOffset");
                     }
 
                     // index data
@@ -368,8 +344,8 @@ namespace CascStorageLib
                     for (int i = 0; i < sections[sectionIndex].CopyTableCount; i++)
                         copyData[reader.ReadInt32()] = reader.ReadInt32();
 
-                    //if (sections[sectionIndex].OffsetMapIDCount > 0)
-                    //    sparseEntries = reader.ReadArray<SparseEntry>(sections[sectionIndex].OffsetMapIDCount);
+                    if (sections[sectionIndex].OffsetMapIDCount > 0)
+                        sparseEntries = reader.ReadArray<SparseEntry>(sections[sectionIndex].OffsetMapIDCount);
 
                     // reference data
                     ReferenceData refData = null;
@@ -393,6 +369,9 @@ namespace CascStorageLib
                     for (int i = 0; i < RecordsCount; ++i)
                     {
                         BitReader bitReader = new BitReader(recordsData) { Position = 0 };
+
+                        if (sections[sectionIndex].OffsetMapIDCount > 0 && sections[sectionIndex].NumRecords != sections[sectionIndex].OffsetMapIDCount)
+                            throw new Exception("sections[sectionIndex].OffsetMapIDCount > 0 && sections[sectionIndex].NumRecords != sections[sectionIndex].OffsetMapIDCount");
 
                         if (Flags.HasFlagExt(DB2Flags.Sparse))
                         {
