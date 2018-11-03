@@ -362,6 +362,15 @@ namespace CascStorageLib
                         refData.Entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
                     }
 
+                    if (sections[sectionIndex].OffsetMapIDCount > 0)
+                    {
+                        // TODO: use this
+                        int[] sparseIndexData = reader.ReadArray<int>(sections[sectionIndex].OffsetMapIDCount);
+                        if (m_indexData.Length != sparseIndexData.Length)
+                            throw new Exception("m_indexData.Length != sparseIndexData.Length");
+                        m_indexData = sparseIndexData;
+                    }
+
                     int position = 0;
 
                     bool indexDataNotEmpty = sections[sectionIndex].IndexDataSize != 0 && m_indexData.GroupBy(i => i).Where(d => d.Count() > 1).Count() == 0;
