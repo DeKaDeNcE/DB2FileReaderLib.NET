@@ -224,7 +224,7 @@ namespace CascStorageLib
     public class WDC3Reader : DB2Reader
     {
         private const int HeaderSize = 72;
-        private const uint WDC3FmtSig = 0x33434457; // WDC2
+        private const uint WDC3FmtSig = 0x33434457; // WDC3
 
         public WDC3Reader(string dbcFile) : this(new FileStream(dbcFile, FileMode.Open)) { }
 
@@ -329,14 +329,16 @@ namespace CascStorageLib
                     else
                     {
                         // sparse data with inlined strings
-                        recordsData = reader.ReadBytes(sections[sectionIndex].SparseTableOffset - sections[sectionIndex].FileOffset);
+                        var offsetMapOffset = sections[sectionIndex].OffsetRecordsEnd + sections[sectionIndex].IndexDataSize + (sections[sectionIndex].CopyTableCount * 8);
 
-                        if (reader.BaseStream.Position != sections[sectionIndex].SparseTableOffset)
-                            throw new Exception("reader.BaseStream.Position != sections[sectionIndex].SparseTableOffset");
+                        recordsData = reader.ReadBytes(sections[sectionIndex].OffsetRecordsEnd - sections[sectionIndex].FileOffset);
+
+                        if (reader.BaseStream.Position != offsetMapOffset)
+                            throw new Exception("reader.BaseStream.Position != offsetMapOffset");
 
                         Dictionary<uint, int> offSetKeyMap = new Dictionary<uint, int>();
                         List<SparseEntry> tempSparseEntries = new List<SparseEntry>();
-                        for (int i = 0; i < (MaxIndex - MinIndex + 1); i++)
+                        for (int i = 0; i < sections[sectionIndex].OffsetMapIDCount; i++)
                         {
                             SparseEntry sparse = reader.Read<SparseEntry>();
 
@@ -366,8 +368,8 @@ namespace CascStorageLib
                     for (int i = 0; i < sections[sectionIndex].CopyTableCount; i++)
                         copyData[reader.ReadInt32()] = reader.ReadInt32();
 
-                    if (sections[sectionIndex].OffsetMapIDCount > 0)
-                        sparseEntries = reader.ReadArray<SparseEntry>(sections[sectionIndex].OffsetMapIDCount);
+                    //if (sections[sectionIndex].OffsetMapIDCount > 0)
+                    //    sparseEntries = reader.ReadArray<SparseEntry>(sections[sectionIndex].OffsetMapIDCount);
 
                     // reference data
                     ReferenceData refData = null;
@@ -382,14 +384,6 @@ namespace CascStorageLib
                         };
 
                         refData.Entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
-                    }
-
-                    // TODO: unused
-                    if (sections[sectionIndex].OffsetMapIDCount > 0)
-                    {
-                        int[] sparseIndexData = reader.ReadArray<int>(sections[sectionIndex].OffsetMapIDCount);
-                        if (m_indexData.Length != sparseIndexData.Length)
-                            throw new Exception("indexData.Length != sparseIndexData.Length");
                     }
 
                     int position = 0;

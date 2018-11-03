@@ -208,7 +208,7 @@ namespace CascStorageLib
         public int FileOffset;
         public int NumRecords;
         public int StringTableSize;
-        public int SparseTableOffset; // CatalogDataOffset, absolute value, {uint offset, ushort size}[MaxId - MinId + 1]
+        public int OffsetRecordsEnd; // CatalogDataOffset, absolute value, {uint offset, ushort size}[MaxId - MinId + 1]
         public int IndexDataSize; // int indexData[IndexDataSize / 4]
         public int ParentLookupDataSize; // uint NumRecords, uint minId, uint maxId, {uint id, uint index}[NumRecords], questionable usefulness...
         public int OffsetMapIDCount;
