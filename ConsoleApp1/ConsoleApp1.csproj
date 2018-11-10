@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CascStorageLib\CascStorageLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DBDefsLib">
+      <HintPath>..\..\..\..\..\GitHub\WoWDBDefs\code\C#\DBDefsLib\bin\Debug\netstandard2.0\DBDefsLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

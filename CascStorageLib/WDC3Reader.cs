@@ -381,9 +381,6 @@ namespace CascStorageLib
                     {
                         BitReader bitReader = new BitReader(recordsData) { Position = 0 };
 
-                        if (sections[sectionIndex].OffsetMapIDCount > 0 && sections[sectionIndex].NumRecords != sections[sectionIndex].OffsetMapIDCount)
-                            throw new Exception("sections[sectionIndex].OffsetMapIDCount > 0 && sections[sectionIndex].NumRecords != sections[sectionIndex].OffsetMapIDCount");
-
                         if (Flags.HasFlagExt(DB2Flags.Sparse))
                         {
                             bitReader.Position = position;
@@ -404,7 +401,7 @@ namespace CascStorageLib
                         }
                         else
                         {
-                            if(refDataDict.Count > 0)
+                            if (refDataDict.Count > 0)
                             {
                                 //Console.WriteLine("Could not find reference data for index " + i);
                             }

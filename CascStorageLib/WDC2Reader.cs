@@ -362,26 +362,28 @@ namespace CascStorageLib
                     for (int i = 0; i < sections[sectionIndex].CopyTableSize / 8; i++)
                         copyData[reader.ReadInt32()] = reader.ReadInt32();
 
-                    // reference data
-                    ReferenceData refData = null;
+                    // reference data, apparently is optional so read to a dictionary instead of an array
+                    var refDataDict = new Dictionary<int, int>();
 
                     if (sections[sectionIndex].ParentLookupDataSize > 0)
                     {
-                        refData = new ReferenceData
-                        {
-                            NumRecords = reader.ReadInt32(),
-                            MinId = reader.ReadInt32(),
-                            MaxId = reader.ReadInt32()
-                        };
+                        var numRecords = reader.ReadInt32();
+                        var minID = reader.ReadInt32();
+                        var maxID = reader.ReadInt32();
 
-                        refData.Entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
+                        for (var i = 0; i < numRecords; i++)
+                        {
+                            var foreignID = reader.ReadInt32();
+                            var recordID = reader.ReadInt32();
+                            refDataDict[recordID] = foreignID;
+                        }
                     }
 
                     int position = 0;
 
                     bool indexDataNotEmpty = sections[sectionIndex].IndexDataSize != 0 && m_indexData.GroupBy(i => i).Where(d => d.Count() > 1).Count() == 0;
 
-                    for (int i = 0; i < RecordsCount; ++i)
+                    for (int i = 0; i < sections[sectionIndex].NumRecords; ++i)
                     {
                         BitReader bitReader = new BitReader(recordsData) { Position = 0 };
 
@@ -393,7 +395,25 @@ namespace CascStorageLib
                         else
                             bitReader.Offset = i * RecordSize;
 
-                        IDB2Row rec = new WDC2Row(this, bitReader, sections[sectionIndex].FileOffset, indexDataNotEmpty ? m_indexData[i] : -1, refData?.Entries[i], i);
+                        var refEntry = new ReferenceEntry();
+
+                        if (refDataDict.ContainsKey(i))
+                        {
+                            refEntry = new ReferenceEntry()
+                            {
+                                Id = i,
+                                Index = refDataDict[i]
+                            };
+                        }
+                        else
+                        {
+                            if (refDataDict.Count > 0)
+                            {
+                                //Console.WriteLine("Could not find reference data for index " + i);
+                            }
+                        }
+
+                        IDB2Row rec = new WDC2Row(this, bitReader, sections[sectionIndex].FileOffset, indexDataNotEmpty ? m_indexData[i] : -1, refEntry, i);
 
                         if (indexDataNotEmpty)
                             _Records.Add((int)m_indexData[i], rec);
