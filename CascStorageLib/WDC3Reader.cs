@@ -377,7 +377,7 @@ namespace CascStorageLib
 
                     bool indexDataNotEmpty = sections[sectionIndex].IndexDataSize != 0 && m_indexData.GroupBy(i => i).Where(d => d.Count() > 1).Count() == 0;
 
-                    for (int i = 0; i < RecordsCount; ++i)
+                    for (int i = 0; i < sections[sectionIndex].NumRecords; ++i)
                     {
                         BitReader bitReader = new BitReader(recordsData) { Position = 0 };
 
