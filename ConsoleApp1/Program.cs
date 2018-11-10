@@ -12,6 +12,7 @@ namespace ConsoleApp1
             var build = "8.1.0.28366";
             var dbcdir = @"Z:\DBCs\" + build + @"\dbfilesclient";
 
+            //var def = DefinitionManager.CompileDefinition(Path.Combine(dbcdir, "specializationspellsdisplay.db2"), build);
             foreach (var file in Directory.GetFiles(dbcdir))
             {
                 try
