@@ -94,27 +94,27 @@ namespace CascStorageLib
 
                     if (arrayElementType == typeof(int))
                     {
-                        f.SetValue(this, FieldReader.GetFieldValueArray<int>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size));
+                        f.SetValue(this, FieldReader.GetFieldValueArray<int>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]));
                     }
                     else if (arrayElementType == typeof(uint))
                     {
-                        f.SetValue(this, FieldReader.GetFieldValueArray<uint>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size));
+                        f.SetValue(this, FieldReader.GetFieldValueArray<uint>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]));
                     }
                     //else if (arrayElementType == typeof(ulong))
                     //{
-                    //    f.SetValue(this, FieldReader.GetFieldValueArray<ulong>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size));
+                    //    f.SetValue(this, FieldReader.GetFieldValueArray<ulong>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]));
                     //}
                     else if (arrayElementType == typeof(float))
                     {
-                        f.SetValue(this, FieldReader.GetFieldValueArray<float>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size));
+                        f.SetValue(this, FieldReader.GetFieldValueArray<float>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]));
                     }
                     else if (arrayElementType == typeof(ushort))
                     {
-                        f.SetValue(this, FieldReader.GetFieldValueArray<ushort>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size));
+                        f.SetValue(this, FieldReader.GetFieldValueArray<ushort>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]));
                     }
                     else if (arrayElementType == typeof(byte))
                     {
-                        f.SetValue(this, FieldReader.GetFieldValueArray<byte>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size));
+                        f.SetValue(this, FieldReader.GetFieldValueArray<byte>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]));
                     }
                     else if (arrayElementType == typeof(string))
                     {
@@ -129,7 +129,7 @@ namespace CascStorageLib
                         {
                             var pos = recordsOffset + r.Offset + (r.Position >> 3);
 
-                            int[] strIdx = FieldReader.GetFieldValueArray<int>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex], atr.Size);
+                            int[] strIdx = FieldReader.GetFieldValueArray<int>(r, fieldMeta[fieldIndex], columnMeta[fieldIndex], palletData[fieldIndex], commonData[fieldIndex]);
 
                             for (int i = 0; i < array.Length; i++)
                                 array[i] = stringsTable[pos + i * 4 + strIdx[i]];
@@ -162,6 +162,7 @@ namespace CascStorageLib
     {
         int Id { get; set; }
         T GetField<T>(int fieldIndex, int arrayIndex = -1);
+        void GetFields<T>(FieldCache<T>[] fields, T entry);
         T As<T>() where T : ClientDBRow, new();
         IDB2Row Clone();
     }
@@ -417,14 +418,14 @@ namespace CascStorageLib
             throw new Exception(string.Format("Unexpected compression type {0}", columnMeta.CompressionType));
         }
 
-        public static T[] GetFieldValueArray<T>(BitReader r, FieldMetaData fieldMeta, ColumnMetaData columnMeta, Value32[] palletData, Dictionary<int, Value32> commonData, int arraySize) where T : unmanaged
+        public static T[] GetFieldValueArray<T>(BitReader r, FieldMetaData fieldMeta, ColumnMetaData columnMeta, Value32[] palletData, Dictionary<int, Value32> commonData) where T : unmanaged
         {
             switch (columnMeta.CompressionType)
             {
                 case CompressionType.None:
                     int bitSize = 32 - fieldMeta.Bits;
 
-                    T[] arr1 = new T[arraySize];
+                    T[] arr1 = new T[columnMeta.Size / (FastStruct<T>.Size * 8)];
 
                     for (int i = 0; i < arr1.Length; i++)
                     {
@@ -435,25 +436,22 @@ namespace CascStorageLib
                     }
 
                     return arr1;
-                case CompressionType.Immediate:
-                    T[] arr2 = new T[arraySize];
+                //case CompressionType.Immediate:
+                //    T[] arr2 = new T[arraySize];
 
-                    for (int i = 0; i < arr2.Length; i++)
-                        arr2[i] = r.Read<T>(columnMeta.Immediate.BitWidth);
+                //    for (int i = 0; i < arr2.Length; i++)
+                //        arr2[i] = r.Read<T>(columnMeta.Immediate.BitWidth);
 
-                    return arr2;
-                case CompressionType.SignedImmediate:
-                    T[] arr4 = new T[arraySize];
+                //    return arr2;
+                //case CompressionType.SignedImmediate:
+                //    T[] arr4 = new T[arraySize];
 
-                    for (int i = 0; i < arr4.Length; i++)
-                        arr4[i] = r.ReadSigned<T>(columnMeta.Immediate.BitWidth);
+                //    for (int i = 0; i < arr4.Length; i++)
+                //        arr4[i] = r.ReadSigned<T>(columnMeta.Immediate.BitWidth);
 
-                    return arr4;
+                //    return arr4;
                 case CompressionType.PalletArray:
                     int cardinality = columnMeta.Pallet.Cardinality;
-
-                    if (arraySize != cardinality)
-                        throw new Exception("Struct missmatch for pallet array field?");
 
                     uint palletArrayIndex = r.Read<uint>(columnMeta.Pallet.BitWidth);
 
@@ -465,6 +463,35 @@ namespace CascStorageLib
                     return arr3;
             }
             throw new Exception(string.Format("Unexpected compression type {0}", columnMeta.CompressionType));
+        }
+
+        public static string[] GetFieldValueStringArray(BitReader r, FieldMetaData fieldMeta, ColumnMetaData columnMeta, int recordsOffset, Dictionary<long, string> stringTable)
+        {
+            switch (columnMeta.CompressionType)
+            {
+                case CompressionType.None:
+                    int bitSize = 32 - fieldMeta.Bits;
+
+                    string[] arr1 = new string[columnMeta.Size / (FastStruct<int>.Size * 8)];
+
+                    for (int i = 0; i < arr1.Length; i++)
+                    {
+                        int offSet = recordsOffset + r.Offset + (r.Position >> 3);
+
+                        if (bitSize > 0)
+                            arr1[i] = stringTable[offSet + r.Read<int>(bitSize)];
+                        else
+                            arr1[i] = stringTable[offSet + r.Read<int>(columnMeta.Immediate.BitWidth)];
+                    }
+
+                    return arr1;
+            }
+            throw new Exception(string.Format("Unexpected compression type {0}", columnMeta.CompressionType));
+        }
+
+        public void GetFields<T>(FieldCache<T>[] fields, T entry)
+        {
+            return;
         }
     }
 }

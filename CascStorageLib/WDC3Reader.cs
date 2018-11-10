@@ -56,15 +56,15 @@ namespace CascStorageLib
             [typeof(string)] = (id, data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => { var pos = recordsOffset + data.Offset + (data.Position >> 3); int strOfs = FieldReader.GetFieldValue<int>(id, data, fieldMeta, columnMeta, palletData, commonData); return stringTable[pos + strOfs]; },
         };
 
-        private static Dictionary<Type, Func<BitReader, FieldMetaData, ColumnMetaData, Value32[], Dictionary<int, Value32>, Dictionary<long, string>, int, object>> arrayReaders = new Dictionary<Type, Func<BitReader, FieldMetaData, ColumnMetaData, Value32[], Dictionary<int, Value32>, Dictionary<long, string>, int, object>>
+        private static Dictionary<Type, Func<BitReader, int, FieldMetaData, ColumnMetaData, Value32[], Dictionary<int, Value32>, Dictionary<long, string>, object>> arrayReaders = new Dictionary<Type, Func<BitReader, int, FieldMetaData, ColumnMetaData, Value32[], Dictionary<int, Value32>, Dictionary<long, string>, object>>
         {
-            [typeof(float)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => FieldReader.GetFieldValueArray<float>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex],
-            [typeof(int)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => FieldReader.GetFieldValueArray<int>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex],
-            [typeof(uint)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => FieldReader.GetFieldValueArray<uint>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex],
-            [typeof(ulong)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => FieldReader.GetFieldValueArray<ulong>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex],
-            [typeof(ushort)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => FieldReader.GetFieldValueArray<ushort>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex],
-            [typeof(byte)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => FieldReader.GetFieldValueArray<byte>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex],
-            [typeof(string)] = (data, fieldMeta, columnMeta, palletData, commonData, stringTable, arrayIndex) => { int strOfs = FieldReader.GetFieldValueArray<int>(data, fieldMeta, columnMeta, palletData, commonData, arrayIndex + 1)[arrayIndex]; return stringTable[strOfs]; },
+            [typeof(float[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueArray<float>(data, fieldMeta, columnMeta, palletData, commonData),
+            [typeof(int[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueArray<int>(data, fieldMeta, columnMeta, palletData, commonData),
+            [typeof(uint[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueArray<uint>(data, fieldMeta, columnMeta, palletData, commonData),
+            [typeof(ulong[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueArray<ulong>(data, fieldMeta, columnMeta, palletData, commonData),
+            [typeof(ushort[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueArray<ushort>(data, fieldMeta, columnMeta, palletData, commonData),
+            [typeof(byte[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueArray<byte>(data, fieldMeta, columnMeta, palletData, commonData),
+            [typeof(string[])] = (data, recordsOffset, fieldMeta, columnMeta, palletData, commonData, stringTable) => FieldReader.GetFieldValueStringArray(data, fieldMeta, columnMeta, recordsOffset, stringTable),
         };
 
         public T GetField<T>(int fieldIndex, int arrayIndex = -1)
@@ -86,7 +86,7 @@ namespace CascStorageLib
             if (arrayIndex >= 0)
             {
                 if (arrayReaders.TryGetValue(typeof(T), out var reader))
-                    value = reader(m_data, m_reader.Meta[fieldIndex], m_reader.ColumnMeta[fieldIndex], m_reader.PalletData[fieldIndex], m_reader.CommonData[fieldIndex], m_stringsTable, arrayIndex);
+                    value = reader(m_data, m_recordsOffset, m_reader.Meta[fieldIndex], m_reader.ColumnMeta[fieldIndex], m_reader.PalletData[fieldIndex], m_reader.CommonData[fieldIndex], m_stringsTable);
                 else
                     throw new Exception("Unhandled array type: " + typeof(T).Name);
             }
@@ -99,6 +99,55 @@ namespace CascStorageLib
             }
 
             return (T)value;
+        }
+
+        public void GetFields<T>(FieldCache<T>[] fields, T entry)
+        {
+            int indexFieldOffSet = 0;
+
+            for (int i = 0; i < fields.Length; ++i)
+            {
+                FieldCache<T> info = fields[i];
+                if (info.IndexMapField)
+                {
+                    indexFieldOffSet++;
+                    info.Setter(entry, Convert.ChangeType(Id, info.Field.FieldType));
+                    continue;
+                }
+
+                object value = null;
+                int fieldIndex = i - indexFieldOffSet;
+
+                if (fieldIndex >= m_reader.Meta.Length)
+                {
+                    value = m_refId;
+                    info.Setter(entry, Convert.ChangeType(value, info.Field.FieldType));
+                    continue;
+                }
+
+                if (!m_isSparse)
+                {
+                    m_data.Position = m_reader.ColumnMeta[fieldIndex].RecordOffset;
+                    m_data.Offset = m_dataOffset;
+                }
+
+                if (info.IsArray)
+                {
+                    if (arrayReaders.TryGetValue(info.Field.FieldType, out var reader))
+                        value = reader(m_data, m_recordsOffset, m_reader.Meta[fieldIndex], m_reader.ColumnMeta[fieldIndex], m_reader.PalletData[fieldIndex], m_reader.CommonData[fieldIndex], m_stringsTable);
+                    else
+                        throw new Exception("Unhandled array type: " + typeof(T).Name);
+                }
+                else
+                {
+                    if (simpleReaders.TryGetValue(info.Field.FieldType, out var reader))
+                        value = reader(Id, m_data, m_recordsOffset, m_reader.Meta[fieldIndex], m_reader.ColumnMeta[fieldIndex], m_reader.PalletData[fieldIndex], m_reader.CommonData[fieldIndex], m_stringsTable);
+                    else
+                        throw new Exception("Unhandled field type: " + typeof(T).Name);
+                }
+
+                info.Setter(entry, value);
+            }
         }
 
         public IDB2Row Clone()
