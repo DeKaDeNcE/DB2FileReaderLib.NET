@@ -41,16 +41,16 @@ namespace CascStorageLib
 
             for (int i = 0; i < fields.Length; ++i)
             {
-                bool indexMapAttribute = reader.Flags.HasFlagExt(DB2Flags.Index) ? Attribute.IsDefined(fields[i], typeof(IndexAttribute)) : false;
+                //bool indexMapAttribute = reader.Flags.HasFlagExt(DB2Flags.Index) ? Attribute.IsDefined(fields[i], typeof(IndexAttribute)) : false;
 
-                fieldCache[i] = new FieldCache<T>(fields[i], fields[i].FieldType.IsArray, fields[i].GetSetter<T>(), indexMapAttribute);
+                //fieldCache[i] = new FieldCache<T>(fields[i], fields[i].FieldType.IsArray, fields[i].GetSetter<T>(), indexMapAttribute);
             }
 
             Parallel.ForEach(reader.AsEnumerable(), row =>
             {
                 T entry = new T();
 
-                row.Value.GetFields(fieldCache, entry);
+                //row.Value.GetFields(fieldCache, entry);
 
                 TryAdd(row.Key, entry);
             });
