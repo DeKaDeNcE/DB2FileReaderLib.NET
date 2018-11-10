@@ -292,7 +292,7 @@ namespace CascStorageLib
                         // TODO: use this shit
                         int[] sparseIndexData = reader.ReadArray<int>(sections[sectionIndex].NumSparseRecords);
 
-                        if (indexData.Length != sparseIndexData.Length)
+                        if (hasIndex && indexData.Length != sparseIndexData.Length)
                             throw new Exception("m_indexData.Length != sparseIndexData.Length");
 
                         indexData = sparseIndexData;
