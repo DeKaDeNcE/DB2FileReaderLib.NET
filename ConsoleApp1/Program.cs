@@ -9,13 +9,8 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            var build = "8.0.1.26231";
+            var build = "8.1.0.28366";
             var dbcdir = @"Z:\DBCs\" + build + @"\dbfilesclient";
-
-            var filename = Path.Combine(dbcdir, "map.db2");
-            var rawType = DefinitionManager.CompileDefinition(filename, build);
-            var type = typeof(Storage<>).MakeGenericType(rawType);
-            var instance = (IDictionary)Activator.CreateInstance(type, filename);
 
             foreach (var file in Directory.GetFiles(dbcdir))
             {
