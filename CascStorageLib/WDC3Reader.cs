@@ -118,7 +118,7 @@ namespace CascStorageLib
 
     public class WDC3Reader : DB2Reader
     {
-        private const int HeaderSize = 72 + 1 * 40;
+        private const int HeaderSize = 72;
         private const uint WDC3FmtSig = 0x33434457; // WDC3
         private Func<ulong, bool> hasTactKeyFunc;
 
@@ -167,6 +167,9 @@ namespace CascStorageLib
 
                 // field meta data
                 m_meta = reader.ReadArray<FieldMetaData>(FieldsCount);
+
+                if (sectionsCount == 0 || RecordsCount == 0)
+                    return;
 
                 // column meta data
                 m_columnMeta = reader.ReadArray<ColumnMetaData>(FieldsCount);
@@ -269,7 +272,10 @@ namespace CascStorageLib
                         };
 
                         ReferenceEntry[] entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
-                        refData.Entries = entries.ToDictionary(e => e.Index, e => e.Id);
+                        refData.Entries = new Dictionary<int, int>();
+
+                        for (int i = 0; i < entries.Length; i++)
+                            refData.Entries[entries[i].Index] = entries[i].Id;
                     }
                     else
                     {
@@ -306,9 +312,9 @@ namespace CascStorageLib
 
                         bool hasRef = refData.Entries.TryGetValue(i, out int refId);
 
-                        IDB2Row rec = new WDC3Row(this, bitReader, sections[sectionIndex].FileOffset, sections[sectionIndex].IndexDataSize != 0 ? indexData[i] : -1, hasRef ? refId : -1, isSparse, stringsTable);
+                        IDB2Row rec = new WDC3Row(this, bitReader, sections[sectionIndex].FileOffset, hasIndex ? indexData[i] : -1, hasRef ? refId : -1, isSparse, stringsTable);
 
-                        if (sections[sectionIndex].IndexDataSize != 0)
+                        if (hasIndex)
                             _Records.Add(indexData[i], rec);
                         else
                             _Records.Add(rec.Id, rec);

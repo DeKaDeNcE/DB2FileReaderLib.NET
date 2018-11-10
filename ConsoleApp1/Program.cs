@@ -20,7 +20,7 @@ namespace ConsoleApp1
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Failed to load " + Path.GetFileNameWithoutExtension(file) + ": " + e.Message);
+                    Console.WriteLine("Failed to load " + Path.GetFileNameWithoutExtension(file) + ": " + e.Message + "\n" + e.StackTrace);
                 }
             }
 
