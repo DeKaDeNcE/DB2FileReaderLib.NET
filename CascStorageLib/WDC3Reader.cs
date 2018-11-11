@@ -110,6 +110,9 @@ namespace CascStorageLib
         {
             int indexFieldOffSet = 0;
 
+            m_data.Position = 0;
+            m_data.Offset = m_dataOffset;
+
             for (int i = 0; i < fields.Length; ++i)
             {
                 FieldCache<T> info = fields[i];
@@ -130,11 +133,12 @@ namespace CascStorageLib
                     continue;
                 }
 
-                if (!m_isSparse)
-                {
-                    m_data.Position = m_reader.ColumnMeta[fieldIndex].RecordOffset;
-                    m_data.Offset = m_dataOffset;
-                }
+
+                //if (!m_isSparse)
+                //{
+                //    m_data.Position = m_reader.ColumnMeta[fieldIndex].RecordOffset;
+                //    m_data.Offset = m_dataOffset;
+                //}
 
                 if (info.IsArray)
                 {
