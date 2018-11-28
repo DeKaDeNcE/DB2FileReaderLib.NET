@@ -99,7 +99,7 @@ namespace CascStorageLib
 
                 if (fieldIndex >= m_reader.Meta.Length)
                 {
-                    value = m_refData?.Id ?? 0;
+                    value = m_refData?.Index ?? 0;
                     info.Setter(entry, Convert.ChangeType(value, info.Field.FieldType));
                     continue;
                 }
