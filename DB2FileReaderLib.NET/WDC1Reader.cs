@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CascStorageLib
+namespace DB2FileReaderLib.NET
 {
     public class WDC1Row : IDB2Row
     {
@@ -326,21 +326,19 @@ namespace CascStorageLib
                     }
                 }
 
-                // reference data, apparently is optional so read to a dictionary instead of an array
-                var refDataDict = new Dictionary<int, int>();
+                // reference data
+                ReferenceData refData = null;
 
                 if (referenceDataSize > 0)
                 {
-                    var numRecords = reader.ReadInt32();
-                    var minID = reader.ReadInt32();
-                    var maxID = reader.ReadInt32();
-
-                    for (var i = 0; i < numRecords; i++)
+                    refData = new ReferenceData
                     {
-                        var foreignID = reader.ReadInt32();
-                        var recordID = reader.ReadInt32();
-                        refDataDict[recordID] = foreignID;
-                    }
+                        NumRecords = reader.ReadInt32(),
+                        MinId = reader.ReadInt32(),
+                        MaxId = reader.ReadInt32()
+                    };
+
+                    refData.Entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
                 }
 
                 int position = 0;
@@ -357,18 +355,7 @@ namespace CascStorageLib
                     else
                         bitReader.Offset = i * RecordSize;
 
-                    var refEntry = new ReferenceEntry();
-
-                    if (refDataDict.ContainsKey(i))
-                    {
-                        refEntry = new ReferenceEntry()
-                        {
-                            LocalIndex = i,
-                            ForeignIndex = refDataDict[i]
-                        };
-                    }
-
-                    IDB2Row rec = new WDC1Row(this, bitReader, indexDataSize != 0 ? m_indexData[i] : -1, refEntry, i);
+                    IDB2Row rec = new WDC1Row(this, bitReader, indexDataSize != 0 ? m_indexData[i] : -1, refData?.Entries.ElementAtOrDefault(i), i);
 
                     if (indexDataSize != 0)
                         _Records.Add(m_indexData[i], rec);

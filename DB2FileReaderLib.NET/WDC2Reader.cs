@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace CascStorageLib
+namespace DB2FileReaderLib.NET
 {
     public class WDC2Row : IDB2Row
     {
@@ -260,7 +260,7 @@ namespace CascStorageLib
                 int sectionsCount = reader.ReadInt32();
 
                 if (sectionsCount > 1)
-                    throw new Exception("sectionsCount > 1");
+                    throw new Exception("WDC2 only supports 1 section");
 
                 if (sectionsCount == 0)
                     return;
@@ -362,21 +362,19 @@ namespace CascStorageLib
                     for (int i = 0; i < sections[sectionIndex].CopyTableSize / 8; i++)
                         copyData[reader.ReadInt32()] = reader.ReadInt32();
 
-                    // reference data, apparently is optional so read to a dictionary instead of an array
-                    var refDataDict = new Dictionary<int, int>();
+                    // reference data
+                    ReferenceData refData = null;
 
                     if (sections[sectionIndex].ParentLookupDataSize > 0)
                     {
-                        var numRecords = reader.ReadInt32();
-                        var minID = reader.ReadInt32();
-                        var maxID = reader.ReadInt32();
-
-                        for (var i = 0; i < numRecords; i++)
+                        refData = new ReferenceData
                         {
-                            var foreignID = reader.ReadInt32();
-                            var recordID = reader.ReadInt32();
-                            refDataDict[recordID] = foreignID;
-                        }
+                            NumRecords = reader.ReadInt32(),
+                            MinId = reader.ReadInt32(),
+                            MaxId = reader.ReadInt32()
+                        };
+
+                        refData.Entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
                     }
 
                     int position = 0;
@@ -395,18 +393,7 @@ namespace CascStorageLib
                         else
                             bitReader.Offset = i * RecordSize;
 
-                        var refEntry = new ReferenceEntry();
-
-                        if (refDataDict.ContainsKey(i))
-                        {
-                            refEntry = new ReferenceEntry()
-                            {
-                                LocalIndex = i,
-                                ForeignIndex = refDataDict[i]
-                            };
-                        }
-
-                        IDB2Row rec = new WDC2Row(this, bitReader, sections[sectionIndex].FileOffset, indexDataNotEmpty ? m_indexData[i] : -1, refEntry, i);
+                        IDB2Row rec = new WDC2Row(this, bitReader, sections[sectionIndex].FileOffset, indexDataNotEmpty ? m_indexData[i] : -1, refData?.Entries.ElementAtOrDefault(i), i);
 
                         if (indexDataNotEmpty)
                             _Records.Add((int)m_indexData[i], rec);

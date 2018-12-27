@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CascStorageLib
+namespace DB2FileReaderLib.NET
 {
     public interface IDB2Row
     {
@@ -183,14 +183,14 @@ namespace CascStorageLib
         Unknown2     = 0x10
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
     public struct SparseEntry
     {
         public uint Offset;
         public ushort Size;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
     public struct SectionHeader
     {
         public ulong TactKeyLookup;
@@ -203,7 +203,7 @@ namespace CascStorageLib
         public int ParentLookupDataSize; // uint NumRecords, uint minId, uint maxId, {uint id, uint index}[NumRecords], questionable usefulness...
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
     public struct SectionHeaderWDC3
     {
         public ulong TactKeyLookup;
