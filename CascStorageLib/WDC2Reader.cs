@@ -401,8 +401,8 @@ namespace CascStorageLib
                         {
                             refEntry = new ReferenceEntry()
                             {
-                                Id = i,
-                                Index = refDataDict[i]
+                                Id = refDataDict[i],
+                                Index = i
                             };
                         }
                         else
