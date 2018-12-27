@@ -190,6 +190,7 @@ namespace CascStorageLib
         public ushort Size;
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SectionHeader
     {
         public ulong TactKeyLookup;
@@ -202,6 +203,7 @@ namespace CascStorageLib
         public int ParentLookupDataSize; // uint NumRecords, uint minId, uint maxId, {uint id, uint index}[NumRecords], questionable usefulness...
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct SectionHeaderWDC3
     {
         public ulong TactKeyLookup;
