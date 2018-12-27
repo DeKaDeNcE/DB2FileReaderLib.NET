@@ -96,7 +96,7 @@ namespace CascStorageLib
 
                 if (fieldIndex >= m_reader.Meta.Length)
                 {
-                    value = m_refData?.Id ?? 0;
+                    value = m_refData?.ForeignIndex ?? 0;
                     info.Setter(entry, Convert.ChangeType(value, info.Field.FieldType));
                     continue;
                 }
@@ -326,19 +326,21 @@ namespace CascStorageLib
                     }
                 }
 
-                // reference data
-                ReferenceData refData = null;
+                // reference data, apparently is optional so read to a dictionary instead of an array
+                var refDataDict = new Dictionary<int, int>();
 
                 if (referenceDataSize > 0)
                 {
-                    refData = new ReferenceData
-                    {
-                        NumRecords = reader.ReadInt32(),
-                        MinId = reader.ReadInt32(),
-                        MaxId = reader.ReadInt32()
-                    };
+                    var numRecords = reader.ReadInt32();
+                    var minID = reader.ReadInt32();
+                    var maxID = reader.ReadInt32();
 
-                    refData.Entries = reader.ReadArray<ReferenceEntry>(refData.NumRecords);
+                    for (var i = 0; i < numRecords; i++)
+                    {
+                        var foreignID = reader.ReadInt32();
+                        var recordID = reader.ReadInt32();
+                        refDataDict[recordID] = foreignID;
+                    }
                 }
 
                 int position = 0;
@@ -355,7 +357,18 @@ namespace CascStorageLib
                     else
                         bitReader.Offset = i * RecordSize;
 
-                    IDB2Row rec = new WDC1Row(this, bitReader, indexDataSize != 0 ? m_indexData[i] : -1, refData?.Entries[i], i);
+                    var refEntry = new ReferenceEntry();
+
+                    if (refDataDict.ContainsKey(i))
+                    {
+                        refEntry = new ReferenceEntry()
+                        {
+                            LocalIndex = i,
+                            ForeignIndex = refDataDict[i]
+                        };
+                    }
+
+                    IDB2Row rec = new WDC1Row(this, bitReader, indexDataSize != 0 ? m_indexData[i] : -1, refEntry, i);
 
                     if (indexDataSize != 0)
                         _Records.Add(m_indexData[i], rec);

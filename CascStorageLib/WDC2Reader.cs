@@ -99,7 +99,7 @@ namespace CascStorageLib
 
                 if (fieldIndex >= m_reader.Meta.Length)
                 {
-                    value = m_refData?.Id ?? 0;
+                    value = m_refData?.ForeignIndex ?? 0;
                     info.Setter(entry, Convert.ChangeType(value, info.Field.FieldType));
                     continue;
                 }
@@ -401,16 +401,9 @@ namespace CascStorageLib
                         {
                             refEntry = new ReferenceEntry()
                             {
-                                Id = refDataDict[i],
-                                Index = i
+                                LocalIndex = i,
+                                ForeignIndex = refDataDict[i]
                             };
-                        }
-                        else
-                        {
-                            if (refDataDict.Count > 0)
-                            {
-                                //Console.WriteLine("Could not find reference data for index " + i);
-                            }
                         }
 
                         IDB2Row rec = new WDC2Row(this, bitReader, sections[sectionIndex].FileOffset, indexDataNotEmpty ? m_indexData[i] : -1, refEntry, i);

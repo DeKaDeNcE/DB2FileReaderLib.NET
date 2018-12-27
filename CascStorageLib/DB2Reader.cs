@@ -161,8 +161,8 @@ namespace CascStorageLib
 
     public struct ReferenceEntry
     {
-        public int Id;
-        public int Index;
+        public int LocalIndex;
+        public int ForeignIndex;
     }
 
     public class ReferenceData
