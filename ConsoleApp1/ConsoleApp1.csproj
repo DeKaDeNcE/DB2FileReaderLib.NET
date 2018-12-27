@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CascStorageLib\CascStorageLib.csproj" />
+    <ProjectReference Include="..\DB2FileReaderLib.NET\DB2FileReaderLib.NET.csproj" />
   </ItemGroup>
 
   <ItemGroup>

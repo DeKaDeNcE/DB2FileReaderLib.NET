@@ -4,8 +4,8 @@ using System.IO;
 using DBDefsLib;
 using System.Reflection;
 using System.Reflection.Emit;
-using CascStorageLib.Attributes;
-using CascStorageLib;
+using DB2FileReaderLib.NET;
+using DB2FileReaderLib.NET.Attributes;
 
 namespace ConsoleApp1
 {
